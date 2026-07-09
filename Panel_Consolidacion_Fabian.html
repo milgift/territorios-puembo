@@ -42,6 +42,12 @@
     border-radius:9px; background:#fff; color:var(--navy); cursor:pointer;}
   .procmsg{font-size:14px; font-weight:600;}
   .procmsg.ok{color:var(--ok);} .procmsg.warn{color:var(--warn);}
+  button.warnbtn{padding:11px 18px; font-size:15px; font-weight:700; border:2px solid var(--warn);
+    border-radius:9px; background:#fff; color:var(--warn); cursor:pointer;}
+  button.warnbtn:active{background:#FBE9E6;}
+  .cardclear{margin-top:8px; text-align:right;}
+  .cardclear button{border:none; background:none; color:var(--warn); font-size:12px; font-weight:600;
+    cursor:pointer; padding:5px;}
 
   .toolbar{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; align-items:center;}
   .search{flex:1; min-width:180px; padding:11px 12px; font-size:15px; border:2px solid var(--line); border-radius:10px;}
@@ -107,6 +113,14 @@
     <h2>Exportar para tus registros / NW Scheduler</h2>
     <div class="row">
       <button class="secondary" id="exportBtn">Descargar CSV de fechas actuales</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Después de cargar las fechas a NW Scheduler</h2>
+    <p style="font-size:14px; color:#666; margin:0 0 10px;">Una vez que ya ingresaste estas fechas en NWS (quedaron guardadas ahí para siempre), limpia esta pantalla para dejarla lista para la próxima ronda.</p>
+    <div class="row">
+      <button class="warnbtn" id="clearAllBtn">Ya cargué todo a NWS — limpiar para la próxima ronda</button>
     </div>
   </div>
 
@@ -276,10 +290,19 @@ function render(){
         <div class="datefield"><label>R2 Inicio</label><input type="date" data-num="${num}" data-round="2" data-kind="ini" value="${rec.ini2||''}"></div>
         <div class="datefield"><label>R2 Fin</label><input type="date" data-num="${num}" data-round="2" data-kind="fin" value="${rec.fin2||''}"></div>
       </div>
+      <div class="cardclear"><button data-clearnum="${num}">Limpiar este territorio</button></div>
     `;
     listEl.appendChild(card);
   });
   listEl.querySelectorAll('input[type="date"]').forEach(inp => inp.addEventListener('change', onDateChange));
+  listEl.querySelectorAll('[data-clearnum]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const num = btn.dataset.clearnum;
+      if(confirm('¿Ya cargaste esta fecha a NW Scheduler? Se va a borrar de aquí.')){
+        delete DATA[num]; saveData(DATA); render(); applyFilters(); updateStats();
+      }
+    });
+  });
 }
 
 function onDateChange(e){
@@ -345,6 +368,14 @@ document.getElementById('exportBtn').addEventListener('click', () => {
   a.href = url; a.download = 'Puembo_Fechas_Territorios.csv';
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   URL.revokeObjectURL(url);
+});
+
+document.getElementById('clearAllBtn').addEventListener('click', () => {
+  if(confirm('¿Ya ingresaste todas estas fechas en NW Scheduler? Esto va a borrar TODO lo de esta pantalla para empezar limpio en la próxima ronda.')){
+    DATA = {};
+    saveData(DATA);
+    render(); applyFilters(); updateStats();
+  }
 });
 
 render(); applyFilters(); updateStats();

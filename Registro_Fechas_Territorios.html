@@ -48,6 +48,12 @@
     border:none; border-radius:10px; background:var(--ok); color:#fff; cursor:pointer;}
   .copybtn:active{opacity:.85;}
   .copied{color:var(--ok); font-weight:700; font-size:14px; margin-top:6px; display:none;}
+  .clearbtn{display:block; width:100%; margin-top:8px; padding:12px; font-size:14px; font-weight:700;
+    border:2px solid #C0562F; border-radius:10px; background:#fff; color:#C0562F; cursor:pointer;}
+  .clearbtn:active{background:#F5DCD1;}
+  .cardclear{margin-top:10px; text-align:right;}
+  .cardclear button{border:none; background:none; color:#B33A2E; font-size:13px; font-weight:600;
+    cursor:pointer; padding:6px;}
 
   main{padding:14px 16px 60px; max-width:640px; margin:0 auto;}
   .card{background:var(--card); border:1px solid var(--line); border-left:8px solid var(--line);
@@ -109,6 +115,7 @@
     <div class="summarytext" id="summarytext">Todavía no hay fechas anotadas.</div>
     <button class="copybtn" id="copybtn">Copiar resumen</button>
     <div class="copied" id="copiedmsg">Copiado ✓ — ya puedes pegarlo en WhatsApp</div>
+    <button class="clearbtn" id="clearAllBtn">Ya lo envié — limpiar todo para la próxima ronda</button>
   </details>
 
   <div id="list"></div>
@@ -217,12 +224,23 @@ function render(){
           </div>
         </div>
       `).join('')}
+      <div class="cardclear"><button data-clearnum="${num}">Limpiar este territorio</button></div>
     `;
     listEl.appendChild(card);
   });
 
   listEl.querySelectorAll('input[type="date"]').forEach(inp => {
     inp.addEventListener('change', onDateChange);
+  });
+  listEl.querySelectorAll('[data-clearnum]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const num = btn.dataset.clearnum;
+      if(confirm('¿Ya se envió esta fecha y no la necesitas más aquí? Se va a borrar de este territorio.')){
+        delete DATA[num];
+        saveData(DATA);
+        render(); applyFilters(); updateSummary();
+      }
+    });
   });
 }
 
@@ -310,6 +328,15 @@ function fallbackCopy(text, done){
   try{ document.execCommand('copy'); done(); }catch(e){}
   document.body.removeChild(ta);
 }
+
+document.getElementById('clearAllBtn').addEventListener('click', () => {
+  if(confirm('¿Ya enviaste el resumen a Fabián? Esto va a borrar TODAS las fechas anotadas aquí, para empezar limpio en la próxima ronda.')){
+    DATA = {};
+    saveData(DATA);
+    render(); applyFilters(); updateSummary();
+    document.getElementById('summarybar').open = false;
+  }
+});
 
 render();
 applyFilters();
