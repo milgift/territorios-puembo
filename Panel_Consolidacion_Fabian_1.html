@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel de Consolidación — Territorios Puembo</title>
+<style>
+  :root{
+    --navy:#1F3864; --ink:#25272B; --paper:#F7F8FA; --card:#FFFFFF; --line:#E1E4E9;
+    --g1-bg:#DCE6F1; --g1-fg:#2E5FA3;
+    --g2-bg:#DCEEE8; --g2-fg:#0F6E56;
+    --g3-bg:#F5DCD1; --g3-fg:#C0562F;
+    --g4-bg:#E6E1F0; --g4-fg:#5B3E96;
+    --gp-bg:#FFF3CD; --gp-fg:#9C7A00;
+    --ok:#1B7A43; --warn:#B33A2E;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--paper);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-size:16px;}
+  header{background:var(--navy); color:#fff; padding:22px 20px 18px;}
+  header h1{margin:0 0 4px; font-size:21px;}
+  header p{margin:0; font-size:14px; opacity:.85;}
+
+  main{max-width:820px; margin:0 auto; padding:18px 16px 60px;}
+
+  .stats{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:18px;}
+  @media (min-width:600px){ .stats{grid-template-columns:repeat(6,1fr);} }
+  .stat{background:#fff; border:1px solid var(--line); border-radius:12px; padding:12px 8px; text-align:center;}
+  .stat .n{font-size:22px; font-weight:800; color:var(--navy);}
+  .stat .l{font-size:12px; color:#777; margin-top:2px;}
+
+  .panel{background:#fff; border:1px solid var(--line); border-radius:14px; padding:16px; margin-bottom:18px;}
+  .panel h2{margin:0 0 10px; font-size:16px; color:var(--navy);}
+  textarea{width:100%; min-height:110px; padding:10px 12px; font-size:14px; border:2px solid var(--line);
+    border-radius:10px; font-family:inherit; resize:vertical;}
+  textarea:focus{outline:none; border-color:var(--navy);}
+  .row{display:flex; gap:10px; align-items:center; margin-top:10px; flex-wrap:wrap;}
+  button.primary{padding:11px 18px; font-size:15px; font-weight:700; border:none; border-radius:9px;
+    background:var(--navy); color:#fff; cursor:pointer;}
+  button.secondary{padding:11px 18px; font-size:15px; font-weight:700; border:2px solid var(--navy);
+    border-radius:9px; background:#fff; color:var(--navy); cursor:pointer;}
+  .procmsg{font-size:14px; font-weight:600;}
+  .procmsg.ok{color:var(--ok);} .procmsg.warn{color:var(--warn);}
+  button.warnbtn{padding:11px 18px; font-size:15px; font-weight:700; border:2px solid var(--warn);
+    border-radius:9px; background:#fff; color:var(--warn); cursor:pointer;}
+  button.warnbtn:active{background:#FBE9E6;}
+  .cardclear{margin-top:8px; text-align:right;}
+  .cardclear button{border:none; background:none; color:var(--warn); font-size:12px; font-weight:600;
+    cursor:pointer; padding:5px;}
+
+  .toolbar{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; align-items:center;}
+  .search{flex:1; min-width:180px; padding:11px 12px; font-size:15px; border:2px solid var(--line); border-radius:10px;}
+  .chip{padding:9px 14px; border-radius:999px; border:2px solid var(--line); background:#fff; font-size:14px;
+    font-weight:600; color:#555; cursor:pointer; white-space:nowrap;}
+  .chip.active{border-color:transparent; color:#fff;}
+  .chip[data-g="todos"].active{background:var(--navy);}
+  .chip[data-g="pendientes"].active{background:var(--warn);}
+  .chip[data-g="Grupo 1"].active{background:var(--g1-fg);}
+  .chip[data-g="Grupo 2"].active{background:var(--g2-fg);}
+  .chip[data-g="Grupo 3"].active{background:var(--g3-fg);}
+  .chip[data-g="Grupo 4"].active{background:var(--g4-fg);}
+  .chip[data-g="Personal"].active{background:var(--gp-fg);}
+
+  .card{background:var(--card); border:1px solid var(--line); border-left:8px solid var(--line);
+    border-radius:12px; padding:12px 16px; margin-bottom:10px;}
+  .card.G1{border-left-color:var(--g1-fg);} .card.G2{border-left-color:var(--g2-fg);}
+  .card.G3{border-left-color:var(--g3-fg);} .card.G4{border-left-color:var(--g4-fg);}
+  .card.GP{border-left-color:var(--gp-fg);}
+  .card.hide{display:none;}
+  .card.pending{background:#FFF9F5;}
+
+  .card-top{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .num{font-size:14px; font-weight:800; color:#888;}
+  .tname{font-size:16px; font-weight:700; flex:1;}
+  .badge{font-size:11px; font-weight:700; padding:3px 9px; border-radius:999px;}
+  .G1 .badge{background:var(--g1-bg); color:var(--g1-fg);} .G2 .badge{background:var(--g2-bg); color:var(--g2-fg);}
+  .G3 .badge{background:var(--g3-bg); color:var(--g3-fg);} .G4 .badge{background:var(--g4-bg); color:var(--g4-fg);}
+  .GP .badge{background:var(--gp-bg); color:var(--gp-fg);}
+  .statuspill{font-size:11px; font-weight:700; padding:3px 9px; border-radius:999px; background:#eee; color:#888;}
+  .statuspill.done{background:#E3F3E9; color:var(--ok);}
+  .encargado{font-size:13px; color:#777; margin:4px 0 8px;}
+
+  .datepair{display:flex; gap:8px; margin-bottom:6px;}
+  .predfield{margin-bottom:6px;}
+  .predfield label{display:block; font-size:11px; color:#888; margin-bottom:3px;}
+  .predfield select, .predfield input[type="text"]{width:100%; padding:7px 6px; font-size:14px;
+    border:1px solid var(--line); border-radius:7px;}
+  .predfield input[type="text"]{margin-top:6px;}
+  .datefield{flex:1; min-width:0;}
+  .datefield label{display:block; font-size:11px; color:#888; margin-bottom:3px;}
+  .datefield input{width:100%; padding:7px 6px; font-size:14px; border:1px solid var(--line); border-radius:7px;}
+
+  .empty{text-align:center; color:#888; padding:30px 20px; font-size:15px;}
+  footer{text-align:center; padding:20px; font-size:13px; color:#999;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Panel de Consolidación — Territorios</h1>
+  <p>Congregación Puembo · Fabián — recibe y organiza los reportes de Luisito</p>
+</header>
+
+<main>
+  <div class="stats" id="stats"></div>
+
+  <div class="panel">
+    <h2>Pegar resumen que envió Luisito</h2>
+    <textarea id="pasteArea" placeholder="Pega aquí el texto que Luisito copió y envió por WhatsApp…"></textarea>
+    <div class="row">
+      <button class="primary" id="procesarBtn">Procesar y combinar</button>
+      <span class="procmsg" id="procmsg"></span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Exportar para tus registros / NW Scheduler</h2>
+    <div class="row">
+      <button class="secondary" id="exportBtn">Descargar CSV de fechas actuales</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Después de cargar las fechas a NW Scheduler</h2>
+    <p style="font-size:14px; color:#666; margin:0 0 10px;">Una vez que ya ingresaste estas fechas en NWS (quedaron guardadas ahí para siempre), limpia esta pantalla para dejarla lista para la próxima ronda.</p>
+    <div class="row">
+      <button class="warnbtn" id="clearAllBtn">Ya cargué todo a NWS — limpiar para la próxima ronda</button>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <input class="search" id="search" type="text" placeholder="Buscar por número o nombre…">
+  </div>
+  <div class="toolbar" id="chips">
+    <button class="chip active" data-g="todos">Todos</button>
+    <button class="chip" data-g="pendientes">Pendientes</button>
+    <button class="chip" data-g="Grupo 1">Grupo 1</button>
+    <button class="chip" data-g="Grupo 2">Grupo 2</button>
+    <button class="chip" data-g="Grupo 3">Grupo 3</button>
+    <button class="chip" data-g="Grupo 4">Grupo 4</button>
+    <button class="chip" data-g="Personal">Personal</button>
+  </div>
+
+  <div id="list"></div>
+  <div class="empty" id="emptymsg" style="display:none;">No se encontró ningún territorio con esa búsqueda.</div>
+</main>
+
+<footer>Los datos se guardan en esta computadora/navegador. Exporta seguido para respaldar o para actualizar NW Scheduler.</footer>
+
+<script>
+const TERRITORIOS = [
+[1,"Ferretería Cano Lastra","Grupo 1","Elías Pajuña"],
+[2,"Restaurante Colombia","Grupo 1","Elías Pajuña"],
+[3,"Complejo Arquitectos","Grupo 1","Elías Pajuña"],
+[4,"Heladería Imperio","Grupo 1","Elías Pajuña"],
+[5,"Flia. Mendoza","Grupo 1","Elías Pajuña"],
+[6,"Chiche Toledo","Grupo 1","Elías Pajuña"],
+[7,"La Y Negocios","Grupo 1","Elías Pajuña"],
+[8,"La Rabija","Grupo 1","Elías Pajuña"],
+[9,"El Avión","Grupo 1","Elías Pajuña"],
+[10,"Los Conejos","Grupo 1","Elías Pajuña"],
+[11,"El Campamento","Grupo 1","Elías Pajuña"],
+[12,"Market de la Cruz","Grupo 2","Christian Vinueza"],
+[15,"Salón del Reino","Grupo 2","Christian Vinueza"],
+[16,"Nueva Andalucía y Estadio","Grupo 2","Christian Vinueza"],
+[17,"Los Hongos","Grupo 2","Christian Vinueza"],
+[18,"San José","Grupo 2","Christian Vinueza"],
+[19,"Parque de San José","Grupo 2","Christian Vinueza"],
+[20,"Complejo Cristina","Grupo 2","Christian Vinueza"],
+[21,"Calle Pichincha","Grupo 3","Reinaldo Pajuña"],
+[22,"Flia. Pajuña","Grupo 3","Reinaldo Pajuña"],
+[23,"Escuela","Grupo 3","Reinaldo Pajuña"],
+[24,"Parque de Puembo","Grupo 3","Reinaldo Pajuña"],
+[25,"Coliseo","Grupo 3","Reinaldo Pajuña"],
+[26,"Cementerio / Colegio","Grupo 3","Reinaldo Pajuña"],
+[27,"La Victoria","Grupo 3","Reinaldo Pajuña"],
+[28,"El Polo / San Luis","Grupo 3","Reinaldo Pajuña"],
+[29,"Santa Rosa","Grupo 3","Reinaldo Pajuña"],
+[30,"Cruz de Piedra","Grupo 3","Reinaldo Pajuña"],
+[31,"La Gruta","Grupo 3","Reinaldo Pajuña"],
+[13,"Urbanización El Algarrobo","Grupo 4","Milton Pajuña"],
+[14,"Los Arrayanes","Grupo 4","Milton Pajuña"],
+[32,"Conjunto Judiciales","Grupo 4","Milton Pajuña"],
+[33,"Escuela Mangahuantag","Grupo 4","Milton Pajuña"],
+[34,"Santa Ana","Grupo 4","Milton Pajuña"],
+[35,"Flia. García","Grupo 4","Milton Pajuña"],
+[36,"Ultima parada de Bus","Grupo 4","Milton Pajuña"],
+[37,"Hacienda Nápoles","Grupo 4","Milton Pajuña"],
+[38,"San Pedro Shalom","Grupo 4","Milton Pajuña"],
+[39,"Nápoles","Grupo 4","Milton Pajuña"],
+[40,"Patas y Huellas","Grupo 4","Milton Pajuña"],
+[41,"Territorio personal 1","Personal","Martha Núñez"],
+[42,"Territorio personal 2","Personal","Martha Núñez"],
+];
+
+const GCODE = {"Grupo 1":"G1","Grupo 2":"G2","Grupo 3":"G3","Grupo 4":"G4","Personal":"GP"};
+const PUBLICADORES = ["Cristian V.","Reinaldo P.","Milton P.","Daniel P.","Elías P.","Andrés C.",
+  "Franklin Q.","Gilbert S.","Gustavo Y.","Miguel M.","Rubén E.","Edgar M."];
+const STORE_KEY = "puembo_fechas_territorios_fabian_v1";
+
+function loadData(){
+  try{ const raw = localStorage.getItem(STORE_KEY); return raw ? JSON.parse(raw) : {}; }
+  catch(e){ return {}; }
+}
+function saveData(data){
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify(data)); }catch(e){}
+}
+let DATA = loadData();
+
+const listEl = document.getElementById('list');
+const emptyEl = document.getElementById('emptymsg');
+
+function ddmmyyyyToISO(s){
+  if(!s) return '';
+  const m = s.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if(!m) return '';
+  const [_, d, mo, y] = m;
+  return `${y}-${mo.padStart(2,'0')}-${d.padStart(2,'0')}`;
+}
+
+function parsePaste(text){
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  let matched = 0, skipped = 0;
+  lines.forEach(line => {
+    const head = line.match(/^#(\d+)\b.*?—\s*(.+)$/);
+    if(!head){ skipped++; return; }
+    const num = head[1];
+    const rest = head[2];
+    if(!DATA[num]) DATA[num] = {};
+    const r1 = rest.match(/R1:\s*(.*?)\s*\|\s*([\d/]+|\?)\s*a\s*([\d/]+|—)/);
+    const r2 = rest.match(/R2:\s*(.*?)\s*\|\s*([\d/]+|\?)\s*a\s*([\d/]+|—)/);
+    if(r1){
+      const pred = r1[1]; const ini = ddmmyyyyToISO(r1[2]); const fin = ddmmyyyyToISO(r1[3]);
+      if(pred && pred !== '—'){
+        if(PUBLICADORES.includes(pred)){ DATA[num].pred1 = pred; }
+        else { DATA[num].pred1 = '__otro__'; DATA[num].predOtro1 = pred; }
+      }
+      if(ini) DATA[num].ini1 = ini;
+      if(fin) DATA[num].fin1 = fin;
+    }
+    if(r2){
+      const pred = r2[1]; const ini = ddmmyyyyToISO(r2[2]); const fin = ddmmyyyyToISO(r2[3]);
+      if(pred && pred !== '—'){
+        if(PUBLICADORES.includes(pred)){ DATA[num].pred2 = pred; }
+        else { DATA[num].pred2 = '__otro__'; DATA[num].predOtro2 = pred; }
+      }
+      if(ini) DATA[num].ini2 = ini;
+      if(fin) DATA[num].fin2 = fin;
+    }
+    matched++;
+  });
+  saveData(DATA);
+  return {matched, skipped};
+}
+
+document.getElementById('procesarBtn').addEventListener('click', () => {
+  const text = document.getElementById('pasteArea').value;
+  const msg = document.getElementById('procmsg');
+  if(!text.trim()){
+    msg.textContent = 'Pega primero el texto de Luisito.'; msg.className='procmsg warn'; return;
+  }
+  const {matched, skipped} = parsePaste(text);
+  if(matched === 0){
+    msg.textContent = 'No se reconoció ninguna línea — revisa que sea el texto copiado tal cual.';
+    msg.className='procmsg warn';
+  } else {
+    msg.textContent = `Combinado: ${matched} territorio(s) actualizados${skipped? ', '+skipped+' línea(s) no reconocidas':''}.`;
+    msg.className='procmsg ok';
+    document.getElementById('pasteArea').value = '';
+  }
+  render(); applyFilters(); updateStats();
+});
+
+function fieldId(num, round, kind){ return `t${num}_r${round}_${kind}`; }
+
+function hasAny(rec){ return rec && (rec.ini1||rec.fin1||rec.ini2||rec.fin2||rec.pred1||rec.pred2); }
+
+function predSelectHtml(num, r, rec){
+  return `
+    <div class="predfield">
+      <label>Quién predicó (R${r})</label>
+      <select data-num="${num}" data-round="${r}" data-kind="pred">
+        <option value="">Selecciona…</option>
+        ${PUBLICADORES.map(p => `<option value="${p}" ${rec['pred'+r]===p?'selected':''}>${p}</option>`).join('')}
+        <option value="__otro__" ${rec['pred'+r]==='__otro__'?'selected':''}>Otro…</option>
+      </select>
+      <input type="text" class="otroinput" style="${rec['pred'+r]==='__otro__' ? '' : 'display:none;'}"
+        placeholder="Escribe el nombre" data-num="${num}" data-round="${r}" data-kind="predOtro"
+        value="${rec['predOtro'+r] || ''}">
+    </div>
+  `;
+}
+
+function render(){
+  listEl.innerHTML = '';
+  TERRITORIOS.forEach(([num, name, grupo, encargado]) => {
+    const gcode = GCODE[grupo];
+    const rec = DATA[num] || {};
+    const pending = !hasAny(rec);
+    const card = document.createElement('div');
+    card.className = `card ${gcode}${pending?' pending':''}`;
+    card.dataset.num = num;
+    card.dataset.name = name.toLowerCase();
+    card.dataset.grupo = grupo;
+    card.dataset.pending = pending ? '1' : '0';
+
+    card.innerHTML = `
+      <div class="card-top">
+        <span class="num">#${num}</span>
+        <span class="tname">${name}</span>
+        <span class="badge">${grupo}</span>
+        <span class="statuspill ${pending?'':'done'}">${pending? 'Pendiente' : 'Con fechas'}</span>
+      </div>
+      <div class="encargado">Encargado: ${encargado}</div>
+      ${predSelectHtml(num,1,rec)}
+      <div class="datepair">
+        <div class="datefield"><label>R1 Inicio</label><input type="date" data-num="${num}" data-round="1" data-kind="ini" value="${rec.ini1||''}"></div>
+        <div class="datefield"><label>R1 Fin</label><input type="date" data-num="${num}" data-round="1" data-kind="fin" value="${rec.fin1||''}"></div>
+      </div>
+      ${predSelectHtml(num,2,rec)}
+      <div class="datepair">
+        <div class="datefield"><label>R2 Inicio</label><input type="date" data-num="${num}" data-round="2" data-kind="ini" value="${rec.ini2||''}"></div>
+        <div class="datefield"><label>R2 Fin</label><input type="date" data-num="${num}" data-round="2" data-kind="fin" value="${rec.fin2||''}"></div>
+      </div>
+      <div class="cardclear"><button data-clearnum="${num}">Limpiar este territorio</button></div>
+    `;
+    listEl.appendChild(card);
+  });
+  listEl.querySelectorAll('input[type="date"]').forEach(inp => inp.addEventListener('change', onDateChange));
+  listEl.querySelectorAll('select[data-kind="pred"]').forEach(sel => sel.addEventListener('change', onPredChange));
+  listEl.querySelectorAll('input[data-kind="predOtro"]').forEach(inp => inp.addEventListener('change', onPredOtroChange));
+  listEl.querySelectorAll('[data-clearnum]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const num = btn.dataset.clearnum;
+      if(confirm('¿Ya cargaste esta fecha a NW Scheduler? Se va a borrar de aquí.')){
+        delete DATA[num]; saveData(DATA); render(); applyFilters(); updateStats();
+      }
+    });
+  });
+}
+
+function onDateChange(e){
+  const num = e.target.dataset.num, round = e.target.dataset.round, kind = e.target.dataset.kind;
+  if(!DATA[num]) DATA[num] = {};
+  DATA[num][kind+round] = e.target.value;
+  saveData(DATA);
+  render(); applyFilters(); updateStats();
+}
+
+function onPredChange(e){
+  const num = e.target.dataset.num, round = e.target.dataset.round;
+  if(!DATA[num]) DATA[num] = {};
+  DATA[num]['pred'+round] = e.target.value;
+  saveData(DATA);
+  render(); applyFilters(); updateStats();
+}
+
+function onPredOtroChange(e){
+  const num = e.target.dataset.num, round = e.target.dataset.round;
+  if(!DATA[num]) DATA[num] = {};
+  DATA[num]['predOtro'+round] = e.target.value;
+  saveData(DATA);
+  render(); applyFilters(); updateStats();
+}
+
+function updateStats(){
+  const total = TERRITORIOS.length;
+  const conFechas = TERRITORIOS.filter(([num]) => hasAny(DATA[num])).length;
+  const pendientes = total - conFechas;
+  const grupos = ["Grupo 1","Grupo 2","Grupo 3","Grupo 4"];
+  const porGrupo = grupos.map(g => {
+    const items = TERRITORIOS.filter(t => t[2]===g);
+    const con = items.filter(([num]) => hasAny(DATA[num])).length;
+    return {g, con, total: items.length};
+  });
+  const statsEl = document.getElementById('stats');
+  statsEl.innerHTML = `
+    <div class="stat"><div class="n">${total}</div><div class="l">Total</div></div>
+    <div class="stat"><div class="n" style="color:var(--ok)">${conFechas}</div><div class="l">Con fechas</div></div>
+    <div class="stat"><div class="n" style="color:var(--warn)">${pendientes}</div><div class="l">Pendientes</div></div>
+    ${porGrupo.map(p => `<div class="stat"><div class="n">${p.con}/${p.total}</div><div class="l">${p.g}</div></div>`).join('')}
+  `;
+}
+
+let activeFilter = 'todos', searchTerm = '';
+function applyFilters(){
+  let any = false;
+  listEl.querySelectorAll('.card').forEach(card => {
+    const matchesFilter = activeFilter==='todos' ? true
+      : activeFilter==='pendientes' ? card.dataset.pending==='1'
+      : card.dataset.grupo === activeFilter;
+    const matchesSearch = !searchTerm || card.dataset.num.includes(searchTerm) || card.dataset.name.includes(searchTerm);
+    const show = matchesFilter && matchesSearch;
+    card.classList.toggle('hide', !show);
+    if(show) any = true;
+  });
+  emptyEl.style.display = any ? 'none' : 'block';
+}
+document.getElementById('chips').addEventListener('click', e => {
+  const btn = e.target.closest('.chip'); if(!btn) return;
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active'); activeFilter = btn.dataset.g; applyFilters();
+});
+document.getElementById('search').addEventListener('input', e => {
+  searchTerm = e.target.value.trim().toLowerCase(); applyFilters();
+});
+
+document.getElementById('exportBtn').addEventListener('click', () => {
+  const predText = (rec, r) => {
+    const p = rec['pred'+r];
+    if(!p) return '';
+    return p === '__otro__' ? (rec['predOtro'+r]||'Otro') : p;
+  };
+  const rows = [['Numero','Territorio','Grupo','Encargado','R1_Predico','R1_Inicio','R1_Fin','R2_Predico','R2_Inicio','R2_Fin']];
+  TERRITORIOS.forEach(([num,name,grupo,encargado]) => {
+    const rec = DATA[num] || {};
+    rows.push([num,name,grupo,encargado,predText(rec,1),rec.ini1||'',rec.fin1||'',predText(rec,2),rec.ini2||'',rec.fin2||'']);
+  });
+  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'Puembo_Fechas_Territorios.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById('clearAllBtn').addEventListener('click', () => {
+  if(confirm('¿Ya ingresaste todas estas fechas en NW Scheduler? Esto va a borrar TODO lo de esta pantalla para empezar limpio en la próxima ronda.')){
+    DATA = {};
+    saveData(DATA);
+    render(); applyFilters(); updateStats();
+  }
+});
+
+render(); applyFilters(); updateStats();
+</script>
+</body>
+</html>
